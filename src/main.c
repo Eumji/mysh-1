@@ -9,29 +9,27 @@
 
 int main()
 {
-  char buf[8096];
-  signal(SIGINT, catch_sigint);
-  signal(SIGTSTP, catch_sigtstp);
+	char buf[8096];
+	signal(SIGINT, catch_sigint);
+	signal(SIGTSTP, catch_sigtstp);
 
-  while (1) {
-    fgets(buf, 8096, stdin);
-	
-	//signal(SIGINT, catch_sigint);
-	//signal(SIGTSTP,catch_sigtstp);
-    
-	struct single_command commands[512];
-    int n_commands = 0;
-    mysh_parse_command(buf, &n_commands, &commands);
+	while (1) {
+		strcpy(buf, "");
+		fgets(buf, 8096, stdin);
 
-    int ret = evaluate_command(n_commands, &commands);
+		struct single_command commands[512];
+		int n_commands = 0;
+		mysh_parse_command(buf, &n_commands, &commands);
 
-    free_commands(n_commands, &commands);
-    n_commands = 0;
+		int ret = evaluate_command(n_commands, &commands);
 
-    if (ret == 1) {
-      break;
+		free_commands(n_commands, &commands);
+		n_commands = 0;
+
+		if (ret == 1) {
+			break;
+		}
 	}
-  }
 
-  return 0;
+	return 0;
 }

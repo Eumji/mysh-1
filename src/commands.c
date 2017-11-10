@@ -7,22 +7,22 @@
 #include "built_in.h"
 
 static struct built_in_command built_in_commands[] = {
-  { "cd", do_cd, validate_cd_argv },
-  { "pwd", do_pwd, validate_pwd_argv },
-  { "fg", do_fg, validate_fg_argv }
+	{ "cd", do_cd, validate_cd_argv },
+	{ "pwd", do_pwd, validate_pwd_argv },
+	{ "fg", do_fg, validate_fg_argv }
 };
 
 static int is_built_in_command(const char* command_name)
 {
-  static const int n_built_in_commands = sizeof(built_in_commands) / sizeof(built_in_commands[0]);
+	static const int n_built_in_commands = sizeof(built_in_commands) / sizeof(built_in_commands[0]);
 
-  for (int i = 0; i < n_built_in_commands; ++i) {
-    if (strcmp(command_name, built_in_commands[i].command_name) == 0) {
-      return i;
-    }
-  }
+	for (int i = 0; i < n_built_in_commands; ++i) {
+		if (strcmp(command_name, built_in_commands[i].command_name) == 0) {
+			return i;
+		}
+	}
 
-  return -1; // Not found
+	return -1; // Not found
 }
 
 /*
@@ -30,47 +30,86 @@ static int is_built_in_command(const char* command_name)
  */
 int evaluate_command(int n_commands, struct single_command (*commands)[512])
 {
-  if (n_commands > 0) {
-    struct single_command* com = (*commands);
+	if (n_commands > 0) {
+		struct single_command* com = (*commands);
 
-    assert(com->argc != 0);
+		int flag = 0;
 
-    int built_in_pos = is_built_in_command(com->argv[0]);
-    if (built_in_pos != -1) {
-      if (built_in_commands[built_in_pos].command_validate(com->argc, com->argv)) {
-        if (built_in_commands[built_in_pos].command_do(com->argc, com->argv) != 0) {
-          fprintf(stderr, "%s: Error occurs\n", com->argv[0]);
-        }
-      } else {
-        fprintf(stderr, "%s: Invalid arguments\n", com->argv[0]);
-        return -1;
-      }
-    } else if (strcmp(com->argv[0], "") == 0) {
-      return 0;
-    } else if (strcmp(com->argv[0], "exit") == 0) {
-      return 1;
-    } else {
-      fprintf(stderr, "%s: command not found\n", com->argv[0]);
-      return -1;
-    }
-  }
+		assert(com->argc != 0);
 
-  return 0;
+		for(int i = 0 ; i < (com->argc) ; i++)
+			if(strcmp(com->argv[i], "|") == 0) flag = 1;
+
+		int built_in_pos = is_built_in_command(com->argv[0]);
+		if (built_in_pos != -1) {
+			if (built_in_commands[built_in_pos].command_validate(com->argc, com->argv)) {
+				if (built_in_commands[built_in_pos].command_do(com->argc, com->argv) != 0) {
+					fprintf(stderr, "%s: Error occurs\n", com->argv[0]);
+				}
+			} else {
+				fprintf(stderr, "%s: Invalid arguments\n", com->argv[0]);
+				return -1;
+			}
+		} else if (strcmp(com->argv[0], "") == 0) {
+			return 0;
+		} else if (strcmp(com->argv[0], "exit") == 0) {
+			return 1;
+		} else {
+			char cargv[5][50]={"/usr/local/bin/", "/usr/bin/", "/bin/", "/usr/sbin/", "/sbin/"};
+			char argvz[50]="";
+			strcpy(argvz, com->argv[0]);
+
+			int pid=fork();
+			int iswell=0;
+
+			if(pid<0){ }
+			else if(pid==0){
+				if(execv(com->argv[0],com->argv)==-1){ iswell=-1; }
+
+				if(iswell==-1){
+					for(int i=0;i<5;i++){
+						if(iswell==-1){
+							iswell=0;
+							strcpy(com->argv[0], argvz);
+							char s[100];
+							strcpy(s, cargv[i]);
+							strcat(s, com->argv[0]);
+							strcpy(com->argv[0], s);
+							//strcpy(com->argv[0], argvz);
+							if(execv(com->argv[0], com->argv)==-1){iswell=-1;}
+						}
+						else {break;}
+					}
+				}
+			}
+			else{
+				int status;
+				wait(&status);
+			}
+
+			if(iswell==-1){		
+				fprintf(stderr, "%s: command not found\n", com->argv[0]);
+				return -1;
+			}
+		}
+	}
+
+	return 0;
 }
 
 void free_commands(int n_commands, struct single_command (*commands)[512])
 {
-  for (int i = 0; i < n_commands; ++i) {
-    struct single_command *com = (*commands) + i;
-    int argc = com->argc;
-    char** argv = com->argv;
+	for (int i = 0; i < n_commands; ++i) {
+		struct single_command *com = (*commands) + i;
+		int argc = com->argc;
+		char** argv = com->argv;
 
-    for (int j = 0; j < argc; ++j) {
-      free(argv[j]);
-    }
+		for (int j = 0; j < argc; ++j) {
+			free(argv[j]);
+		}
 
-    free(argv);
-  }
+		free(argv);
+	}
 
-  memset((*commands), 0, sizeof(struct single_command) * n_commands);
+	memset((*commands), 0, sizeof(struct single_command) * n_commands);
 }

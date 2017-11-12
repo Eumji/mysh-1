@@ -75,20 +75,23 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 							strcpy(s, cargv[i]);
 							strcat(s, com->argv[0]);
 							strcpy(com->argv[0], s);
-							//strcpy(com->argv[0], argvz);
 							if(execv(com->argv[0], com->argv)==-1){iswell=-1;}
 						}
 						else {break;}
 					}
 				}
+
+
+				//execv fail
+				strcpy(com->argv[0], argvz);
+				fprintf(stderr, "%s: command not found\n", com->argv[0]);
+				return 1;//kill child
+
 			}
 			else{
 				int status;
 				wait(&status);
-			}
-
-			if(iswell==-1){		
-				fprintf(stderr, "%s: command not found\n", com->argv[0]);
+				//if(well==-1) return -1;
 				return -1;
 			}
 		}

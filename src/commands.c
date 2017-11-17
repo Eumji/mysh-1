@@ -234,6 +234,8 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 					com->argv[i]=NULL;
 				}
 
+
+
 				int status;
 
 				argv2[j] = NULL;
@@ -261,6 +263,8 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 					strcpy(argvz[i], com->argv[i]);
 				}
 
+				argvz[n_commands] = NULL;
+
 				strcpy(ar, argvz[0]);
 
 				int pid=fork();
@@ -286,7 +290,6 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 						}
 					}
 
-
 					//finally execv fail 
 					strcpy(argvz[0], ar);
 					fprintf(stderr, "%s: command not found\n", argvz[0]);
@@ -301,6 +304,9 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 				for(int i = 0 ; i < n_commands; i++)
 					free(argvz[i]);
 				free(argvz);
+			}
+			for(int i = 0 ; i < n_commands ; i++){
+				free(argv2[i]);
 			}
 			free(argv2);
 		}
